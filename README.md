@@ -1,3 +1,5 @@
+> **تشغيل أسهل:** اقرأ [EASY-LAUNCH.md](EASY-LAUNCH.md) — خطوات قصيرة بالعربي والإنجليزي + checklist قبل التشغيل.
+
 # Inferno for iPhone
 
 An emulated iPhone 11, running as an app on a real iPhone.
