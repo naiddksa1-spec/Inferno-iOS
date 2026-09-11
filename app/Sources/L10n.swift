@@ -7,13 +7,14 @@ import SwiftUI
 /// out. That keeps the diff small and lets an untranslated string fall back to
 /// the original rather than showing a key.
 enum AppLanguage: String, CaseIterable {
-    case system, ru, en
+    case system, ru, en, ar
 
     var title: String {
         switch self {
         case .system: return "Auto"
         case .ru:     return "Русский"
         case .en:     return "English"
+        case .ar:     return "العربية"
         }
     }
 }
@@ -24,10 +25,22 @@ enum L10n {
     }
 
     static var showEnglish: Bool {
+        // Kept for older call sites; prefer `string(_:)` which also handles Arabic.
         switch language {
         case .ru:     return false
         case .en:     return true
-        case .system: return !(Locale.preferredLanguages.first ?? "en").hasPrefix("ru")
+        case .ar:     return false
+        case .system:
+            let pref = Locale.preferredLanguages.first ?? "en"
+            return !pref.hasPrefix("ru") && !pref.hasPrefix("ar")
+        }
+    }
+
+    static var showArabic: Bool {
+        switch language {
+        case .ar: return true
+        case .system: return (Locale.preferredLanguages.first ?? "").hasPrefix("ar")
+        default: return false
         }
     }
 
@@ -275,14 +288,67 @@ enum L10n {
         "  адрес меняется — поток исполняет цикл": "  the address moves — the thread is running a loop",
         "  адрес не меняется — поток стоит на одной инструкции":
             "  the address does not move — the thread is stuck on one instruction",
+
+        "Всего три шага: включите JIT через StikDebug, скопируйте файлы гостя, нажмите «Запустить».":
+            "Three steps: enable JIT with StikDebug, copy the guest files, tap Start.",
+        "1) JIT (обязательно)": "1) JIT (required)",
+        "2) Файлы гостя": "2) Guest files",
+        "3) Запуск": "3) Start",
+        "Откройте StikDebug → долгий тап по Inferno → Assign Script → legacy.js → запускайте Inferno из StikDebug, не с иконки.":
+            "Open StikDebug → long-press Inferno → Assign Script → legacy.js → launch Inferno from StikDebug, not the home icon.",
+        "Все файлы на месте": "All files are present",
+        "«Файлы» → «На iPhone» → «Inferno». Берите root.qcow2, не сырой root.":
+            "Files → On My iPhone → Inferno. Use root.qcow2, not the raw root.",
+        "Сначала завершите шаги выше": "Finish the steps above first",
+        "Чтобы запустить снова, полностью закройте приложение и откройте его из StikDebug.":
+            "To start again, force-quit the app and open it from StikDebug.",
         "Аргументы:\n  ": "Arguments:\n  ",
     ]
 
+
+    /// Arabic for the guided setup and the most-used controls. Missing keys
+    /// fall back to English, then Russian.
+    static let arTable: [String: String] = [
+        "Всего три шага: включите JIT через StikDebug, скопируйте файлы гостя, нажмите «Запустить».":
+            "ثلاث خطوات فقط: فعّل JIT عبر StikDebug، انسخ ملفات الضيف، ثم اضغط تشغيل.",
+        "1) JIT (обязательно)": "١) JIT (إلزامي)",
+        "2) Файлы гостя": "٢) ملفات الضيف",
+        "3) Запуск": "٣) تشغيل",
+        "Откройте StikDebug → долгий тап по Inferno → Assign Script → legacy.js → запускайте Inferno из StikDebug, не с иконки.":
+            "افتح StikDebug → اضغط مطوّل على Inferno → Assign Script → legacy.js → شغّل Inferno من StikDebug وليس من الأيقونة.",
+        "Все файлы на месте": "كل الملفات موجودة",
+        "«Файлы» → «На iPhone» → «Inferno». Берите root.qcow2, не сырой root.":
+            "الملفات → على iPhone → Inferno. خذ root.qcow2 وليس ملف root الخام.",
+        "Сначала завершите шаги выше": "أكمل الخطوات أعلاه أولاً",
+        "Чтобы запустить снова, полностью закройте приложение и откройте его из StikDebug.":
+            "لإعادة التشغيل أغلق التطبيق تماماً وافتحه من StikDebug.",
+        "Запустить": "تشغيل",
+        "Проверить снова": "فحص مرة ثانية",
+        "Проверить JIT заново": "إعادة فحص JIT",
+        "JIT: есть (%@)": "JIT: نعم (%@)",
+        "JIT: нет — %@": "JIT: لا — %@",
+        "Язык": "اللغة",
+        "Параметры": "الإعدادات",
+        "Параметры…": "الإعدادات…",
+        "Машина": "الآلة",
+        "Поднять сеть в госте": "رفع الشبكة في الضيف",
+        "Откройте «Файлы» → «На iPhone» → «Inferno» и скопируйте туда InfernoData и AppleSEPROM-Cebu-B1.":
+            "افتح الملفات → على iPhone → Inferno وانسخ InfernoData و AppleSEPROM-Cebu-B1.",
+        "Папки уже созданы, файлы можно класть прямо в них. Подробности — в файле «КУДА КЛАСТЬ ФАЙЛЫ.txt» там же.":
+            "المجلدات جاهزة؛ ضع الملفات فيها مباشرة. التفاصيل في WHERE TO PUT FILES.txt.",
+        "Не хватает": "ناقص",
+        "Запуск отменён: JIT недоступен.": "أُلغي التشغيل: لا يوجد JIT.",
+    ]
+
     static func string(_ russian: String) -> String {
+        if showArabic {
+            return arTable[russian] ?? table[russian] ?? russian
+        }
         guard showEnglish else { return russian }
         return table[russian] ?? russian
     }
 }
+
 
 /// Shorthand used at every call site.
 func L(_ russian: String) -> String { L10n.string(russian) }
