@@ -31,13 +31,13 @@ enum Bootstrap {
     }
 
     private static let note = """
-    Inferno — файлы гостевой системы
-    ================================
+    Inferno — guest files / ملفات الضيف
+    ==================================
 
-    Разложите содержимое комплекта прямо в эту папку:
+    Put the kit right into this folder / ضع الملفات هنا مباشرة:
 
       AppleSEPROM-Cebu-B1
-      InfernoData/root.qcow2        (или root — сырой образ)
+      InfernoData/root.qcow2        (prefer qcow2 — not raw root)
       InfernoData/firmware
       InfernoData/syscfg
       InfernoData/ctrl_bits
@@ -52,16 +52,15 @@ enum Bootstrap {
       InfernoData/Restore/Firmware/038-44135-124.dmg.trustcache
       InfernoData/Restore/Firmware/all_flash/DeviceTree.n104ap.im4p
 
-    Пустые папки уже созданы — файлы можно класть прямо в них.
+    Empty folders are already created.
 
-    Про образ диска: берите root.qcow2, а не сырой root. Сырой занимает 34 ГБ
-    номинально при ~9 ГБ данных и держится на разрежённости файла, которую
-    копирование на телефон теряет. qcow2 занимает свои реальные гигабайты при
-    любом способе переноса.
+    Disk image: use root.qcow2, not raw root (raw looks ~34 GB and breaks when
+    copied to the phone because sparseness is lost).
 
-    JIT включайте через StikDebug ДО запуска машины. Без него транслятор не
-    сможет сделать буфер трансляций исполняемым, и эмулятор не стартует.
+    JIT: always launch via StikDebug with legacy.js assigned BEFORE Start.
+    Without JIT the emulator will not run.
 
-    Этот файл можно удалить.
+    You can delete this file.
     """
 }
+
