@@ -482,7 +482,9 @@ struct RootView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if !model.missing.isEmpty {
+                // Keep the guided checklist up until both the guest files and
+                // JIT are ready — most failed boots are one of those two.
+                if !model.missing.isEmpty || !model.jit.isAvailable {
                     SetupView(model: model)
                         .navigationTitle("Inferno")
                         .navigationBarTitleDisplayMode(.inline)
@@ -1073,30 +1075,76 @@ struct TerminalView: View {
     }
 }
 
-/// Shown until the guest images are present in the app's Documents folder.
+/// Guided first screen: JIT + guest files checklist, then Start.
 struct SetupView: View {
     @ObservedObject var model: VMModel
+
+    private var filesReady: Bool { model.missing.isEmpty }
+    private var jitReady: Bool { model.jit.isAvailable }
+    private var ready: Bool { filesReady && jitReady }
 
     var body: some View {
         List {
             Section {
-                Text(L("Откройте «Файлы» → «На iPhone» → «Inferno» и скопируйте туда InfernoData и AppleSEPROM-Cebu-B1."))
+                Text(L("Всего три шага: включите JIT через StikDebug, скопируйте файлы гостя, нажмите «Запустить»."))
                     .font(.callout)
-                Text(L("Папки уже созданы, файлы можно класть прямо в них. Подробности — в файле «КУДА КЛАСТЬ ФАЙЛЫ.txt» там же."))
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
             }
-            Section(L("Не хватает")) {
-                ForEach(model.missing, id: \.self) { item in
-                    Label(item, systemImage: "xmark.circle")
-                        .foregroundStyle(.red)
+
+            Section(L("1) JIT (обязательно)")) {
+                Label(jitLabel, systemImage: jitReady ? "checkmark.circle.fill" : "xmark.circle.fill")
+                    .foregroundStyle(jitReady ? .green : .red)
+                if !jitReady {
+                    Text(L("Откройте StikDebug → долгий тап по Inferno → Assign Script → legacy.js → запускайте Inferno из StikDebug, не с иконки."))
+                        .font(.footnote)
+                }
+                Button(L("Проверить JIT заново"), systemImage: "arrow.clockwise") {
+                    model.refreshJIT()
                 }
             }
-            Section {
-                Button(L("Проверить снова"), systemImage: "arrow.clockwise") {
+
+            Section(L("2) Файлы гостя")) {
+                if filesReady {
+                    Label(L("Все файлы на месте"), systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                } else {
+                    Text(L("«Файлы» → «На iPhone» → «Inferno». Берите root.qcow2, не сырой root."))
+                        .font(.footnote)
+                    ForEach(model.missing, id: \.self) { item in
+                        Label(item, systemImage: "xmark.circle")
+                            .foregroundStyle(.red)
+                    }
+                }
+                Button(L("Проверить снова"), systemImage: "folder") {
                     model.refreshFiles()
                 }
             }
+
+            Section(L("3) Запуск")) {
+                Button {
+                    model.refreshFiles()
+                    model.refreshJIT()
+                    model.start()
+                } label: {
+                    Label(ready ? L("Запустить") : L("Сначала завершите шаги выше"), systemImage: "play.fill")
+                }
+                .disabled(!ready || model.isRunning || model.hasRun)
+                if model.hasRun {
+                    Text(L("Чтобы запустить снова, полностью закройте приложение и откройте его из StikDebug."))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .onAppear {
+            model.refreshJIT()
+            model.refreshFiles()
+        }
+    }
+
+    private var jitLabel: String {
+        switch model.jit {
+        case .available(let how): return L("JIT: есть (%@)", how)
+        case .unavailable(let why): return L("JIT: нет — %@", why)
         }
     }
 }
